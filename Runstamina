@@ -8,7 +8,7 @@ local humanoid = character:WaitForChild("Humanoid")
 
 -- ==================== CẤU HÌNH ====================
 local WALK_SPEED = 16       -- Tốc độ đi bộ
-local SPRINT_SPEED = 19     -- Tốc độ chạy nhanh (Đã chỉnh xuống 19)
+local SPRINT_SPEED = 19     -- Tốc độ chạy nhanh
 
 local MAX_STAMINA = 100     -- Stamina tối đa
 local STAMINA_DRAIN = 20    -- Tốc độ tiêu hao (stamina/giây)
@@ -39,7 +39,7 @@ if UserInputService.TouchEnabled then
 	local sprintButton = Instance.new("TextButton")
 	sprintButton.Name = "SprintButton"
 	sprintButton.Size = UDim2.new(0, 65, 0, 65)
-	sprintButton.Position = UDim2.new(1, -150, 1, -120)
+	sprintButton.Position = UDim2.new(1, -145, 1, -110)
 	sprintButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 	sprintButton.BackgroundTransparency = 0.4
 	sprintButton.Text = "RUN"
@@ -57,11 +57,11 @@ if UserInputService.TouchEnabled then
 	btnStroke.Thickness = 2
 	btnStroke.Parent = sprintButton
 
-	-- Khung Thanh Stamina (Dài 220px)
+	-- Khung Thanh Stamina (Nằm ở góc dưới bên phải)
 	local staminaBg = Instance.new("Frame")
 	staminaBg.Name = "StaminaBG"
 	staminaBg.Size = UDim2.new(0, 220, 0, 14)
-	staminaBg.Position = UDim2.new(1, -235, 1, -145)
+	staminaBg.Position = UDim2.new(1, -235, 1, -30) -- Đã di chuyển xuống góc dưới bên phải
 	staminaBg.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 	staminaBg.BackgroundTransparency = 0.3
 	staminaBg.Parent = screenGui
