@@ -1,0 +1,151 @@
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+
+-- ==================== CẤU HÌNH ====================
+local WALK_SPEED = 16       -- Tốc độ đi bộ
+local SPRINT_SPEED = 19     -- Tốc độ chạy nhanh (Đã chỉnh xuống 19)
+
+local MAX_STAMINA = 100     -- Stamina tối đa
+local STAMINA_DRAIN = 20    -- Tốc độ tiêu hao (stamina/giây)
+local STAMINA_REGEN = 15    -- Tốc độ hồi phục (stamina/giây)
+local REGEN_DELAY = 1.5     -- Thời gian chờ để hồi sau khi dừng chạy (giây)
+
+local stamina = MAX_STAMINA
+local isSprinting = false
+local lastSprintTime = 0
+
+-- Cập nhật khi Respawn
+player.CharacterAdded:Connect(function(newCharacter)
+	character = newCharacter
+	humanoid = character:WaitForChild("Humanoid")
+	stamina = MAX_STAMINA
+	isSprinting = false
+end)
+
+-- ==================== KÍCH HOẠT UI MOBILE ====================
+if UserInputService.TouchEnabled then
+	-- ScreenGui
+	local screenGui = Instance.new("ScreenGui")
+	screenGui.Name = "SprintGui"
+	screenGui.ResetOnSpawn = false
+	screenGui.Parent = player:WaitForChild("PlayerGui")
+
+	-- Nút Sprint
+	local sprintButton = Instance.new("TextButton")
+	sprintButton.Name = "SprintButton"
+	sprintButton.Size = UDim2.new(0, 65, 0, 65)
+	sprintButton.Position = UDim2.new(1, -150, 1, -120)
+	sprintButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	sprintButton.BackgroundTransparency = 0.4
+	sprintButton.Text = "RUN"
+	sprintButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+	sprintButton.TextSize = 16
+	sprintButton.Font = Enum.Font.SourceSansBold
+	sprintButton.Parent = screenGui
+
+	local btnCorner = Instance.new("UICorner")
+	btnCorner.CornerRadius = UDim.new(1, 0)
+	btnCorner.Parent = sprintButton
+
+	local btnStroke = Instance.new("UIStroke")
+	btnStroke.Color = Color3.fromRGB(255, 255, 255)
+	btnStroke.Thickness = 2
+	btnStroke.Parent = sprintButton
+
+	-- Khung Thanh Stamina (Dài 220px)
+	local staminaBg = Instance.new("Frame")
+	staminaBg.Name = "StaminaBG"
+	staminaBg.Size = UDim2.new(0, 220, 0, 14)
+	staminaBg.Position = UDim2.new(1, -235, 1, -145)
+	staminaBg.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+	staminaBg.BackgroundTransparency = 0.3
+	staminaBg.Parent = screenGui
+
+	local bgCorner = Instance.new("UICorner")
+	bgCorner.CornerRadius = UDim.new(0, 6)
+	bgCorner.Parent = staminaBg
+
+	local bgStroke = Instance.new("UIStroke")
+	bgStroke.Color = Color3.fromRGB(255, 255, 255)
+	bgStroke.Thickness = 1.5
+	bgStroke.Transparency = 0.5
+	bgStroke.Parent = staminaBg
+
+	-- Thanh Stamina chính
+	local staminaBar = Instance.new("Frame")
+	staminaBar.Name = "StaminaBar"
+	staminaBar.Size = UDim2.new(1, 0, 1, 0)
+	staminaBar.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+	staminaBar.Parent = staminaBg
+
+	local barCorner = Instance.new("UICorner")
+	barCorner.CornerRadius = UDim.new(0, 6)
+	barCorner.Parent = staminaBar
+
+	-- Hàm dừng chạy
+	local function stopSprinting()
+		isSprinting = false
+		humanoid.WalkSpeed = WALK_SPEED
+		sprintButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+		sprintButton.BackgroundTransparency = 0.4
+	end
+
+	-- Hàm bắt đầu chạy
+	local function startSprinting()
+		if stamina > 10 and humanoid.MoveDirection.Magnitude > 0 then
+			isSprinting = true
+			humanoid.WalkSpeed = SPRINT_SPEED
+			sprintButton.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+			sprintButton.BackgroundTransparency = 0.2
+		end
+	end
+
+	-- Xử lý sự kiện nhấn nút
+	sprintButton.Activated:Connect(function()
+		if isSprinting then
+			stopSprinting()
+		else
+			startSprinting()
+		end
+	end)
+
+	-- Vòng lặp cập nhật Stamina & Tốc độ
+	game:GetService("RunService").Heartbeat:Connect(function(deltaTime)
+		-- Trừ stamina khi đang chạy và đang di chuyển
+		if isSprinting and humanoid.MoveDirection.Magnitude > 0 then
+			stamina = math.clamp(stamina - (STAMINA_DRAIN * deltaTime), 0, MAX_STAMINA)
+			lastSprintTime = os.clock()
+			
+			-- Hết thể lực -> Bắt buộc dừng chạy
+			if stamina <= 0 then
+				stopSprinting()
+			end
+		else
+			-- Tự động dừng chạy nếu người chơi đứng yên
+			if isSprinting and humanoid.MoveDirection.Magnitude == 0 then
+				stopSprinting()
+			end
+			
+			-- Hồi phục stamina sau khoảng thời gian chờ (REGEN_DELAY)
+			if os.clock() - lastSprintTime >= REGEN_DELAY then
+				stamina = math.clamp(stamina + (STAMINA_REGEN * deltaTime), 0, MAX_STAMINA)
+			end
+		end
+
+		-- Cập nhật mượt mà UI thanh stamina
+		local targetSize = UDim2.new(stamina / MAX_STAMINA, 0, 1, 0)
+		staminaBar:TweenSize(targetSize, Enum.EasingDirection.Out, Enum.EasingStyle.Linear, 0.1, true)
+
+		-- Đổi màu thanh stamina khi sắp hết
+		if stamina < 25 then
+			staminaBar.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+		else
+			staminaBar.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+		end
+	end)
+end
