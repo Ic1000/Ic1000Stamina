@@ -39,7 +39,7 @@ if UserInputService.TouchEnabled then
 	local sprintButton = Instance.new("TextButton")
 	sprintButton.Name = "SprintButton"
 	sprintButton.Size = UDim2.new(0, 65, 0, 65)
-	sprintButton.Position = UDim2.new(1, -145, 1, -110)
+	sprintButton.Position = UDim2.new(1, -175, 1, -105)
 	sprintButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 	sprintButton.BackgroundTransparency = 0.4
 	sprintButton.Text = "RUN"
