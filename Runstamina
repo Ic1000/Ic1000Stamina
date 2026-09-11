@@ -10,7 +10,7 @@ local humanoid = character:WaitForChild("Humanoid")
 local WALK_SPEED = 16       -- Tốc độ đi bộ
 local SPRINT_SPEED = 19     -- Tốc độ chạy nhanh
 
-local MAX_STAMINA = 100     -- Stamina tối đa
+local MAX_STAMINA = 150     -- Stamina tối đa
 local STAMINA_DRAIN = 20    -- Tốc độ tiêu hao (stamina/giây)
 local STAMINA_REGEN = 15    -- Tốc độ hồi phục (stamina/giây)
 local REGEN_DELAY = 1.5     -- Thời gian chờ để hồi sau khi dừng chạy (giây)
@@ -39,7 +39,7 @@ if UserInputService.TouchEnabled then
 	local sprintButton = Instance.new("TextButton")
 	sprintButton.Name = "SprintButton"
 	sprintButton.Size = UDim2.new(0, 65, 0, 65)
-	sprintButton.Position = UDim2.new(1, -185, 1, -103)
+	sprintButton.Position = UDim2.new(1, -187, 1, -104)
 	sprintButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 	sprintButton.BackgroundTransparency = 0.4
 	sprintButton.Text = "RUN"
