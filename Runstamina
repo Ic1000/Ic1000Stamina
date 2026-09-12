@@ -125,9 +125,6 @@ if UserInputService.TouchEnabled then
 
 	-- Hàm bắt đầu chạy
 	local function startSprinting()
-		-- Không cho chạy nếu đang kiệt sức (chờ hồi đầy) hoặc stamina quá thấp
-		if isExhausted or stamina < MAX_STAMINA then return end
-		
 		if humanoid and humanoid.MoveDirection.Magnitude > 0 then
 			isSprinting = true
 			if character then
