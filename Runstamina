@@ -7,13 +7,14 @@ local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 
 -- ==================== CẤU HÌNH ====================
-local MAX_STAMINA = 100     -- Stamina tối đa
+local MAX_STAMINA = 150      -- Stamina tối đa
 local STAMINA_DRAIN = 20    -- Tốc độ tiêu hao (stamina/giây)
 local STAMINA_REGEN = 15    -- Tốc độ hồi phục (stamina/giây)
 local REGEN_DELAY = 1.5     -- Thời gian chờ để hồi sau khi dừng chạy (giây)
 
 local stamina = MAX_STAMINA
 local isSprinting = false
+local isExhausted = false   -- Trạng thái kiệt sức (khóa chạy khi về 0)
 local lastSprintTime = 0
 
 -- Thiết lập mặc định khi vào game
@@ -25,6 +26,7 @@ player.CharacterAdded:Connect(function(newCharacter)
 	humanoid = character:WaitForChild("Humanoid")
 	stamina = MAX_STAMINA
 	isSprinting = false
+	isExhausted = false
 	character:SetAttribute("SpeedBoost", 0)
 end)
 
@@ -34,7 +36,7 @@ if UserInputService.TouchEnabled then
 	local screenGui = Instance.new("ScreenGui")
 	screenGui.Name = "SprintGui"
 	screenGui.ResetOnSpawn = false
-	screenGui.IgnoreGuiInset = true -- Phủ kín toàn màn hình
+	screenGui.IgnoreGuiInset = true -- Phủ kín toàn màn hình (loại bỏ viền trên)
 	screenGui.DisplayOrder = 999999
 	screenGui.Parent = player:WaitForChild("PlayerGui")
 
@@ -45,8 +47,8 @@ if UserInputService.TouchEnabled then
 	sprintButton.Position = UDim2.new(1, -150, 1, -120)
 	sprintButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 	sprintButton.BackgroundTransparency = 0.4
-	sprintButton.Text = "RUN"
-	sprintButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+	sprintButton.Text = "XSprintX"
+	sprintButton.TextColor3 = Color3.fromRGB(224, 224, 224)
 	sprintButton.TextSize = 16
 	sprintButton.Font = Enum.Font.SourceSansBold
 	sprintButton.ZIndex = 1
@@ -110,14 +112,23 @@ if UserInputService.TouchEnabled then
 		if character then
 			character:SetAttribute("SpeedBoost", 0)
 		end
-		sprintButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-		sprintButton.BackgroundTransparency = 0.4
+		
+		-- Nếu đang kiệt sức (về 0) -> Đổi nút sang xám mờ
+		if isExhausted then
+			sprintButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+			sprintButton.BackgroundTransparency = 0.7
+		else
+			sprintButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+			sprintButton.BackgroundTransparency = 0.4
+		end
 	end
 
 	-- Hàm bắt đầu chạy
 	local function startSprinting()
-		-- Chỉ cần Stamina lớn hơn 5 và đang di chuyển là có thể chạy ngay
-		if stamina > 5 and humanoid and humanoid.MoveDirection.Magnitude > 0 then
+		-- Nếu đang bị khóa do kiệt sức (chờ hồi 100%) hoặc không có thể lực -> Không cho chạy
+		if isExhausted or stamina <= 0 then return end
+
+		if humanoid and humanoid.MoveDirection.Magnitude > 0 then
 			isSprinting = true
 			if character then
 				character:SetAttribute("SpeedBoost", 5)
@@ -143,12 +154,13 @@ if UserInputService.TouchEnabled then
 			stamina = math.clamp(stamina - (STAMINA_DRAIN * deltaTime), 0, MAX_STAMINA)
 			lastSprintTime = os.clock()
 			
-			-- Hết thể lực -> Tự dừng chạy
+			-- BẬT KHÓA: Khi stamina giảm chạm mốc 0
 			if stamina <= 0 then
+				isExhausted = true
 				stopSprinting()
 			end
 		else
-			-- Tự động dừng chạy nếu người chơi đứng yên
+			-- Tự động dừng chạy nếu đứng yên
 			if isSprinting and humanoid and humanoid.MoveDirection.Magnitude == 0 then
 				stopSprinting()
 			end
@@ -156,19 +168,29 @@ if UserInputService.TouchEnabled then
 			-- Hồi phục stamina sau khoảng thời gian chờ (REGEN_DELAY)
 			if os.clock() - lastSprintTime >= REGEN_DELAY then
 				stamina = math.clamp(stamina + (STAMINA_REGEN * deltaTime), 0, MAX_STAMINA)
+				
+				-- GIẢI KHÓA: Chỉ khi stamina được lấp đầy ĐỦ 100% (MAX_STAMINA)
+				if isExhausted and stamina >= MAX_STAMINA then
+					isExhausted = false
+					sprintButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+					sprintButton.BackgroundTransparency = 0.4
+				end
 			end
 		end
 
-		-- Màn hình tối dần theo Stamina còn lại
-		darkOverlay.BackgroundTransparency = stamina / MAX_STAMINA
+		-- Màn hình tối dần theo Stamina (Tối 100% khi Stamina = 0)
+		local darknessLevel = 1 - ((1 - (stamina / MAX_STAMINA)) * 0.45)
+darkOverlay.BackgroundTransparency = darknessLevel
 
 		-- Cập nhật mượt mà UI thanh stamina
 		local targetSize = UDim2.new(stamina / MAX_STAMINA, 0, 1, 0)
 		staminaBar:TweenSize(targetSize, Enum.EasingDirection.Out, Enum.EasingStyle.Linear, 0.1, true)
 
-		-- Đổi màu thanh stamina khi sắp hết
-		if stamina < 25 then
-			staminaBar.BackgroundColor3 = Color3.fromRGB(255, 50, 50) -- Màu đỏ
+		-- Đổi màu thanh stamina
+		if isExhausted then
+			staminaBar.BackgroundColor3 = Color3.fromRGB(255, 50, 50) -- Màu đỏ khi đang bị khóa
+		elseif stamina < 50 then
+			staminaBar.BackgroundColor3 = Color3.fromRGB(255, 150, 0) -- Màu cam khi gần hết
 		else
 			staminaBar.BackgroundColor3 = Color3.fromRGB(0, 200, 100) -- Màu xanh lá
 		end
