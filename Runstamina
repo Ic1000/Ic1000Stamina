@@ -21,7 +21,7 @@ local lastSprintTime = 0
 local soundExhausted = Instance.new("Sound")
 soundExhausted.Name = "ExhaustedSound"
 soundExhausted.SoundId = "rbxassetid://8258601891"
-soundExhausted.Volume = 1
+soundExhausted.Volume = 2.5
 soundExhausted.Looped = true
 soundExhausted.Parent = player:WaitForChild("PlayerGui")
 
@@ -55,11 +55,11 @@ if UserInputService.TouchEnabled then
 	local sprintButton = Instance.new("TextButton")
 	sprintButton.Name = "SprintButton"
 	sprintButton.Size = UDim2.new(0, 65, 0, 65)
-	sprintButton.Position = UDim2.new(1, -150, 1, -120)
+	sprintButton.Position = UDim2.new(1, -206, 1, -103)
 	sprintButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 	sprintButton.BackgroundTransparency = 0.4
-	sprintButton.Text = "RUN"
-	sprintButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+	sprintButton.Text = "Sprint"
+	sprintButton.TextColor3 = Color3.fromRGB(224, 224, 224)
 	sprintButton.TextSize = 16
 	sprintButton.Font = Enum.Font.SourceSansBold
 	sprintButton.ZIndex = 1
