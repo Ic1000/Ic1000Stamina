@@ -21,7 +21,7 @@ local lastSprintTime = 0
 local soundExhausted = Instance.new("Sound")
 soundExhausted.Name = "ExhaustedSound"
 soundExhausted.SoundId = "rbxassetid://8258601891"
-soundExhausted.Volume = 2.5
+soundExhausted.Volume = 3
 soundExhausted.Looped = true
 soundExhausted.Parent = player:WaitForChild("PlayerGui")
 
