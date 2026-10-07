@@ -136,7 +136,7 @@ if UserInputService.TouchEnabled then
 
 	-- Hàm bắt đầu chạy
 	local function startSprinting()
-		-- Nếu đang bị khóa do kiệt sức (chờ hồi 100%) hoặc không có thể lực -> Không cho chạy
+		-- Nếu đang bị khóa do kiệt sức hoặc không có thể lực -> Không cho chạy
 		if isExhausted or stamina <= 0 then return end
 
 		if humanoid and humanoid.MoveDirection.Magnitude > 0 then
@@ -160,24 +160,37 @@ if UserInputService.TouchEnabled then
 
 	-- Vòng lặp cập nhật Stamina & Tốc độ
 	game:GetService("RunService").Heartbeat:Connect(function(deltaTime)
-		-- Trừ stamina khi đang chạy và đang di chuyển
+		-- Lấy vận tốc di chuyển thực tế trên mặt phẳng (bỏ qua trục đứng Y)
+		local hrp = character:FindFirstChild("HumanoidRootPart")
+		local currentHorizontalSpeed = 0
+		if hrp then
+			local velocity = hrp.AssemblyLinearVelocity
+			currentHorizontalSpeed = Vector3.new(velocity.X, 0, velocity.Z).Magnitude
+		end
+
+		-- Điều kiện đang chạy: Có lệnh di chuyển (MoveDirection) VÀ thực sự di chuyển (không bị vật cản)
 		if isSprinting and humanoid and humanoid.MoveDirection.Magnitude > 0 then
-			stamina = math.clamp(stamina - (STAMINA_DRAIN * deltaTime), 0, MAX_STAMINA)
-			lastSprintTime = os.clock()
-			
-			-- BẬT KHÓA & PHÁT ÂM THANH: Khi stamina giảm chạm mốc 0
-			if stamina <= 0 then
-				if not isExhausted then
-					isExhausted = true
-					if not soundExhausted.IsPlaying then
-						soundExhausted:Play()
-					end
-				end
+			-- TỰ ĐỘNG DỪNG CHẠY: Nếu người chơi va vào tường / vật cản (tốc độ di chuyển thực tế < 2)
+			if currentHorizontalSpeed < 2 then
 				stopSprinting()
+			else
+				stamina = math.clamp(stamina - (STAMINA_DRAIN * deltaTime), 0, MAX_STAMINA)
+				lastSprintTime = os.clock()
+				
+				-- BẬT KHÓA & PHÁT ÂM THANH: Khi stamina giảm chạm mốc 0
+				if stamina <= 0 then
+					if not isExhausted then
+						isExhausted = true
+						if not soundExhausted.IsPlaying then
+							soundExhausted:Play()
+						end
+					end
+					stopSprinting()
+				end
 			end
 		else
-			-- Tự động dừng chạy nếu đứng yên
-			if isSprinting and humanoid and humanoid.MoveDirection.Magnitude == 0 then
+			-- Tự động dừng chạy nếu thả nút di chuyển
+			if isSprinting and (not humanoid or humanoid.MoveDirection.Magnitude == 0) then
 				stopSprinting()
 			end
 			
@@ -185,7 +198,7 @@ if UserInputService.TouchEnabled then
 			if os.clock() - lastSprintTime >= REGEN_DELAY then
 				stamina = math.clamp(stamina + (STAMINA_REGEN * deltaTime), 0, MAX_STAMINA)
 				
-				-- TẮT ÂM THANH: Ngay khi stamina hồi trên 75
+				-- TẮT ÂM THANH: Ngay khi stamina hồi trên 100
 				if stamina > 100 and soundExhausted.IsPlaying then
 					soundExhausted:Stop()
 				end
@@ -199,7 +212,7 @@ if UserInputService.TouchEnabled then
 			end
 		end
 
-		-- Tính toán độ trong suốt màn hình tối (Tối tối đa 75%)
+		-- Tính toán độ trong suốt màn hình tối
 		local darknessLevel = 1 - ((1 - (stamina / MAX_STAMINA)) * 0.4)
 		darkOverlay.BackgroundTransparency = darknessLevel
 
